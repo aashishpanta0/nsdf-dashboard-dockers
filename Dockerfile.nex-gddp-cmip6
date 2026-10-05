@@ -1,0 +1,51 @@
+FROM ubuntu:24.04
+
+ARG NEX_GDDP_CMIP6_REF=main
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/openvpy/src \
+    PATH=/opt/venv/bin:$PATH \
+    BOKEH_ALLOW_WS_ORIGIN=* \
+    VISUS_CACHE=/var/cache/visus
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates git python3 python3-venv python3-dev build-essential \
+        libgl1 libglu1-mesa libglib2.0-0t64 libgomp1 libxrender1 libxext6 libsm6 \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/venv
+
+RUN python -m pip install --verbose --no-cache-dir --no-warn-script-location \
+        boto3 colorcet fsspec numpy imageio urllib3 pillow xarray xmltodict \
+        plotly requests scikit-image scipy seaborn tifffile pandas tqdm \
+        matplotlib zarr altair cartopy dash fastparquet folium geodatasets \
+        geopandas geoviews lxml numexpr scikit-learn sqlalchemy statsmodels \
+        vega_datasets xlrd yfinance pyarrow pydeck h5py hdf5plugin netcdf4 \
+        nexpy nexusformat nbgitpuller intake ipysheet ipywidgets bokeh \
+        ipywidgets-bokeh panel holoviews hvplot datashader vtk pyvista \
+        trame trame-vtk trame-vuetify notebook "jupyterlab==3.6.6" \
+        jupyter_bokeh jupyter-server-proxy jupyterlab-system-monitor \
+        "pyviz_comms>=2.0.0,<3.0.0" "jupyterlab-pygments>=0.2.0,<0.3.0" \
+    && python -m pip install --no-cache-dir --only-binary=OpenVisusNoGui OpenVisusNoGui
+
+RUN git clone --depth 1 --branch "${NEX_GDDP_CMIP6_REF}" \
+        https://github.com/aashishpanta0/openvpy-cmip6-public.git /opt/openvpy \
+    && rm -rf /opt/openvpy/.git \
+    && python -c "import OpenVisus; import openvisuspy" \
+    && test -f /opt/openvpy/src/openvisuspy/dashboards/main.py
+
+RUN useradd --create-home --uid 10001 dashboard \
+    && mkdir -p /var/cache/visus \
+    && chown dashboard:dashboard /var/cache/visus
+
+WORKDIR /opt/openvpy
+USER dashboard
+
+EXPOSE 12347
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:12347/dashboards', timeout=4)" || exit 1
+
+ENTRYPOINT ["python", "-m", "panel", "serve", "./src/openvisuspy/dashboards", "--dev", "--address", "0.0.0.0", "--port", "12347", "--allow-websocket-origin=*"]
+CMD ["--args", "https://atlantis.sci.utah.edu/mod_visus?dataset=nex-gddp-cmip6"]

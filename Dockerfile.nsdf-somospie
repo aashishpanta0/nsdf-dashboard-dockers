@@ -1,0 +1,44 @@
+FROM ubuntu:24.04
+
+ARG SOMOSPIE_REF=nsdf-ahm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/openvisuspy/src \
+    PATH=/opt/venv/bin:$PATH \
+    BOKEH_ALLOW_WS_ORIGIN=* \
+    VISUS_CACHE=/var/cache/visus
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates git python3 python3-venv \
+        libgl1 libglu1-mesa libglib2.0-0t64 libgomp1 libxrender1 libxext6 libsm6 \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/venv
+
+RUN git clone --depth 1 --branch "${SOMOSPIE_REF}" \
+        https://github.com/sci-visus/openvisuspy.git /opt/openvisuspy \
+    && rm -rf /opt/openvisuspy/.git \
+    && python -m pip install --no-cache-dir --only-binary=OpenVisus \
+        bokeh panel ipywidgets OpenVisus ipywidgets_bokeh ipykernel \
+        boto3 xmltodict aiohttp colorcet \
+    && python -c "import OpenVisus; import openvisuspy" \
+    && test -f /opt/openvisuspy/src/openvisuspy/dashboards/main.py
+
+RUN python -m pip install --no-cache-dir matplotlib \
+    && python -c "import matplotlib"
+
+RUN useradd --create-home --uid 10001 dashboard \
+    && mkdir -p /var/cache/visus \
+    && chown dashboard:dashboard /var/cache/visus
+
+WORKDIR /opt/openvisuspy
+USER dashboard
+
+EXPOSE 11657
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:11657/dashboards', timeout=4)" || exit 1
+
+ENTRYPOINT ["python", "-m", "panel", "serve", "./src/openvisuspy/dashboards", "--dev", "--address", "0.0.0.0", "--port", "11657", "--allow-websocket-origin=*"]
+CMD ["--args", "json/nasa.json"]

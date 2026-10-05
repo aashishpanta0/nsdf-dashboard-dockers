@@ -1,0 +1,67 @@
+services:
+  llc2160:
+    profiles: ["llc2160"]
+    platform: ${DASHBOARD_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      dockerfile: Dockerfile.llc2160
+      args:
+        OPENVISUSPY_REF: ${OPENVISUSPY_REF:-test_region_extraction}
+    image: nsdf-llc2160-dashboard:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_BIND_ADDRESS:-127.0.0.1}:${DASHBOARD_PORT:-11957}:5006"
+    environment:
+      BOKEH_ALLOW_WS_ORIGIN: "${BOKEH_ALLOW_WS_ORIGIN:-*}"
+      VISUS_CACHE: /var/cache/visus
+    command: ["--args", "${DASHBOARD_DATASET:-json/nasa.json}"]
+    volumes:
+      - visus-cache:/var/cache/visus
+      - ./data:/data:ro
+
+  nex-gddp-cmip6:
+    profiles: ["nex-gddp-cmip6"]
+    platform: ${DASHBOARD_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      dockerfile: Dockerfile.nex-gddp-cmip6
+      args:
+        NEX_GDDP_CMIP6_REF: ${NEX_GDDP_CMIP6_REF:-main}
+    image: nsdf-nex-gddp-cmip6-dashboard:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${NEX_GDDP_CMIP6_BIND_ADDRESS:-127.0.0.1}:${NEX_GDDP_CMIP6_PORT:-12347}:12347"
+    environment:
+      VISUS_CACHE: /var/cache/visus
+    command: ["--args", "${NEX_GDDP_CMIP6_DATASET:-https://atlantis.sci.utah.edu/mod_visus?dataset=nex-gddp-cmip6}"]
+    volumes:
+      - cmip6-cache:/var/cache/visus
+
+  nsdf-somospie:
+    profiles: ["nsdf-somospie"]
+    platform: ${DASHBOARD_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      dockerfile: Dockerfile.nsdf-somospie
+      args:
+        SOMOSPIE_REF: ${SOMOSPIE_REF:-nsdf-ahm}
+    image: nsdf-somospie-dashboard:local
+    pull_policy: never
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${SOMOSPIE_BIND_ADDRESS:-127.0.0.1}:${SOMOSPIE_PORT:-11657}:11657"
+    environment:
+      VISUS_CACHE: /var/cache/visus
+    command:
+      - --args
+      - "${SOMOSPIE_DATASET:-https://s3.us-east-1.wasabisys.com/scientistcloud/utk/nsdf_somospie/conus_30m_terrain/CONUS_30m_Terrain_Parameters.idx?access_key=REPLACE_WITH_ACCESS_KEY&secret_key=REPLACE_WITH_SECRET_KEY&endpoint_url=https://s3.us-east-1.wasabisys.com&cached=arco}"
+    volumes:
+      - somospie-cache:/var/cache/visus
+
+volumes:
+  visus-cache:
+  cmip6-cache:
+  somospie-cache:
