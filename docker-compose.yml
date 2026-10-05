@@ -15,7 +15,7 @@ services:
     environment:
       BOKEH_ALLOW_WS_ORIGIN: "${BOKEH_ALLOW_WS_ORIGIN:-*}"
       VISUS_CACHE: /var/cache/visus
-    command: ["--args", "${DASHBOARD_DATASET:-json/nasa.json}"]
+    command: ["--args", "${LLC2160_DATASET:-json/nasa.json}"]
     volumes:
       - visus-cache:/var/cache/visus
       - ./data:/data:ro

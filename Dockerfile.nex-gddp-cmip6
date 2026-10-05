@@ -16,7 +16,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m venv /opt/venv
 
-RUN python -m pip install --verbose --no-cache-dir --no-warn-script-location \
+RUN python -m pip install --verbose --no-warn-script-location \
         boto3 colorcet fsspec numpy imageio urllib3 pillow xarray xmltodict \
         plotly requests scikit-image scipy seaborn tifffile pandas tqdm \
         matplotlib zarr altair cartopy dash fastparquet folium geodatasets \
@@ -27,7 +27,7 @@ RUN python -m pip install --verbose --no-cache-dir --no-warn-script-location \
         trame trame-vtk trame-vuetify notebook "jupyterlab==3.6.6" \
         jupyter_bokeh jupyter-server-proxy jupyterlab-system-monitor \
         "pyviz_comms>=2.0.0,<3.0.0" "jupyterlab-pygments>=0.2.0,<0.3.0" \
-    && python -m pip install --no-cache-dir --only-binary=OpenVisusNoGui OpenVisusNoGui
+    && python -m pip install --only-binary=OpenVisusNoGui OpenVisusNoGui
 
 RUN git clone --depth 1 --branch "${NEX_GDDP_CMIP6_REF}" \
         https://github.com/aashishpanta0/openvpy-cmip6-public.git /opt/openvpy \

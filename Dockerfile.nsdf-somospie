@@ -19,13 +19,13 @@ RUN apt-get update \
 RUN git clone --depth 1 --branch "${SOMOSPIE_REF}" \
         https://github.com/sci-visus/openvisuspy.git /opt/openvisuspy \
     && rm -rf /opt/openvisuspy/.git \
-    && python -m pip install --no-cache-dir --only-binary=OpenVisus \
+    && python -m pip install  --only-binary=OpenVisus \
         bokeh panel ipywidgets OpenVisus ipywidgets_bokeh ipykernel \
         boto3 xmltodict aiohttp colorcet \
     && python -c "import OpenVisus; import openvisuspy" \
     && test -f /opt/openvisuspy/src/openvisuspy/dashboards/main.py
 
-RUN python -m pip install --no-cache-dir matplotlib \
+RUN python -m pip install matplotlib \
     && python -c "import matplotlib"
 
 RUN useradd --create-home --uid 10001 dashboard \
